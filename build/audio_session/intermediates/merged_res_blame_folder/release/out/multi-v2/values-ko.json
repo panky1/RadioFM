@@ -1,0 +1,82 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.ryanheise.audio_session-merged_res-28:/values-ko/values-ko.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\50026086\\.gradle\\caches\\transforms-3\\956f8d1a0f0e3e1ace1ca82263497398\\transformed\\core-1.13.1\\res\\values-ko\\values-ko.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,147,247,341,438,534,632,732",
+                        "endColumns": "91,99,93,96,95,97,99,100",
+                        "endOffsets": "142,242,336,433,529,627,727,828"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,14",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,147,247,341,438,534,632,1264",
+                        "endColumns": "91,99,93,96,95,97,99,100",
+                        "endOffsets": "142,242,336,433,529,627,727,1360"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\50026086\\.gradle\\caches\\transforms-3\\08639ec33e763bc497340168efaa7963\\transformed\\jetified-media2-session-1.2.1\\res\\values-ko\\values-ko.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "55,163,259,351,467",
+                        "endColumns": "107,95,91,115,119",
+                        "endOffsets": "158,254,346,462,582"
+                    },
+                    "to": {
+                        "startLines": "9,10,11,12,13",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "732,840,936,1028,1144",
+                        "endColumns": "107,95,91,115,119",
+                        "endOffsets": "835,931,1023,1139,1259"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.ryanheise.audio_session-mergeReleaseResources-26:/values-ko/values-ko.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\50026086\\.gradle\\caches\\transforms-3\\956f8d1a0f0e3e1ace1ca82263497398\\transformed\\core-1.13.1\\res\\values-ko\\values-ko.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,147,247,341,438,534,632,732",
+                        "endColumns": "91,99,93,96,95,97,99,100",
+                        "endOffsets": "142,242,336,433,529,627,727,828"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,14",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,147,247,341,438,534,632,1264",
+                        "endColumns": "91,99,93,96,95,97,99,100",
+                        "endOffsets": "142,242,336,433,529,627,727,1360"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\50026086\\.gradle\\caches\\transforms-3\\08639ec33e763bc497340168efaa7963\\transformed\\jetified-media2-session-1.2.1\\res\\values-ko\\values-ko.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "55,163,259,351,467",
+                        "endColumns": "107,95,91,115,119",
+                        "endOffsets": "158,254,346,462,582"
+                    },
+                    "to": {
+                        "startLines": "9,10,11,12,13",
+                        "startColumns": "4,4,4,4,4",
+                        "startOffsets": "732,840,936,1028,1144",
+                        "endColumns": "107,95,91,115,119",
+                        "endOffsets": "835,931,1023,1139,1259"
+                    }
+                }
+            ]
+        }
+    ]
+}
