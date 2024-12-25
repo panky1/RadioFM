@@ -35,14 +35,21 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   void _togglePlayback() {
     setState(() {
       if (_isPlaying) {
+        FlutterBackgroundService().invoke('togglePlayback');
+      }
+      _isPlaying = !_isPlaying;
+     /* if (_isPlaying) {
         _audioPlayer.pause();
         FlutterBackgroundService().invoke('setAsBackground');
       } else {
         _audioPlayer.play();
         FlutterBackgroundService().invoke('setAsForeground');
       }
-      _isPlaying = !_isPlaying;
+      _isPlaying = !_isPlaying;*/
     });
+    // Update notification based on playback status
+    FlutterBackgroundService().invoke('update', {'status': _isPlaying ? 'Playing' : 'Paused'});
+
   }
 
   @override

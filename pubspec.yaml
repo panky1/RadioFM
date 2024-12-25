@@ -33,10 +33,11 @@ dependencies:
     sdk: flutter
   just_audio: ^0.9.41  # Add this version or the latest available version
   flutter_background_service: ^5.1.0
-  flutter_background_service_android: ^6.2.6
+  flutter_background_service_android: ^6.3.0
   flutter_background_service_ios: ^5.0.3
   permission_handler: ^11.3.1
   flutter_local_notifications: ^18.0.1
+
 
 
 
