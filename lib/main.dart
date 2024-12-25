@@ -1,124 +1,123 @@
-import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'dart:async';
+import 'dart:ui';
 
-void main() {
+import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:radio1/audio_player_widget.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Check and request required permissions
+  await checkAndRequestPermissions();
+  await initializeService();
+
   runApp(const MaterialApp(
-    home: AudioPlayerWidget(url: 'http://103.112.32.142/hls/hingolifm/live.m3u8'),
+    debugShowCheckedModeBanner: false,
+    home:
+        AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
+        //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
 }
 
-class AudioPlayerWidget extends StatefulWidget {
-  final String url;
+/// Check and request necessary permissions
+Future<void> checkAndRequestPermissions() async {
+  final permissions = [
+    Permission.notification, //  notifications for Android 13+
+  ];
 
-  const AudioPlayerWidget({super.key, required this.url});
-
-  @override
-  _AudioPlayerWidgetState createState() => _AudioPlayerWidgetState();
-}
-
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
-  late AudioPlayer _audioPlayer;
-  bool _isPlaying = false;
-  double _volume = 50; // Default volume
-
-  @override
-  void initState() {
-    super.initState();
-    _audioPlayer = AudioPlayer();
-    _initAudioPlayer();
-  }
-
-  Future<void> _initAudioPlayer() async {
-    try {
-      await _audioPlayer.setUrl(widget.url); // Set the audio stream URL
-      _audioPlayer.setVolume(_volume / 100); // Set initial volume
-    } catch (e) {
-      print('Error loading audio: $e');
+  // Request  permission
+  for (final permission in permissions) {
+    if (await permission.isDenied || await permission.isPermanentlyDenied) {
+      final status = await permission.request();
+      if (!status.isGranted) {
+        print('Permission denied: $permission');
+      }
     }
   }
+}
 
-  @override
-  void dispose() {
-    _audioPlayer.dispose(); // Clean up audio player resources
-    super.dispose();
+/// Initializes the background service
+Future<void> initializeService() async {
+  final service = FlutterBackgroundService();
+
+  await service.configure(
+    androidConfiguration: AndroidConfiguration(
+      onStart: onStart,
+      autoStart: true,
+      isForegroundMode: true,
+    ),
+    iosConfiguration: IosConfiguration(
+      autoStart: true,
+      onForeground: onStart,
+      onBackground: onIosBackground,
+    ),
+  );
+
+  service.startService();
+}
+
+/// iOS background service entry point
+@pragma('vm:entry-point')
+Future<bool> onIosBackground(ServiceInstance service) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+  return true;
+}
+
+/// Android/iOS foreground service entry point
+@pragma('vm:entry-point')
+void onStart(ServiceInstance service) {
+  DartPluginRegistrant.ensureInitialized();
+  final audioPlayer = AudioPlayer();
+  bool isPlaying = false;
+
+  // Initialize the audio player with a default URL
+  audioPlayer.setUrl('https://streams.ilovemusic.de/iloveradio6.mp3');
+  if (service is AndroidServiceInstance) {
+    service.on('setAsForeground').listen((event) {
+      service.setAsForegroundService();
+      service.setForegroundNotificationInfo( title: "HINGOLI FM",
+        content: isPlaying ? "Playing" : "Paused"
+      );
+    });
+    service.on('setAsBackground').listen((event) {
+      service.setAsBackgroundService();
+    });
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.orange,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Image section
-              Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Image.asset(
-                    'assets/images/file.jpeg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Volume Slider
-              Slider(
-                value: _volume,
-                min: 0,
-                max: 100,
-                divisions: 100,
-                label: 'Volume ${_volume.round()}',
-                onChanged: (value) {
-                  setState(() {
-                    _volume = value;
-                    _audioPlayer.setVolume(_volume / 100);
-                  });
-                },
-              ),
-              Text(
-                _isPlaying ? 'Playing' : 'Paused',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              // Play/Pause Button
-              FloatingActionButton(
-                onPressed: () {
-                  setState(() {
-                    if (_isPlaying) {
-                      _audioPlayer.pause();
-                    } else {
-                      _audioPlayer.play();
-                    }
-                    _isPlaying = !_isPlaying; // Toggle play state
-                  });
-                },
-                child: Icon(
-                  _isPlaying ? Icons.pause_circle : Icons.play_circle,
-                  size: 50,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Handle play/pause commands
+  service.on('togglePlayback').listen((event){
+    if(isPlaying){
+      audioPlayer.pause();
+    }else{
+      audioPlayer.play();
+    }
+    isPlaying = !isPlaying;
+// Update notification content
+    if (service is AndroidServiceInstance){
+      service.setForegroundNotificationInfo(
+        title: "HINGOLI FM",
+        content: isPlaying ? "Playing" : "Paused",
+      );
+    }
+  });
+  service.on('stopService').listen((event) {
+    /*audioPlayer.stop();
+    service.stopSelf();*/
+  });
+  Timer.periodic(const Duration(seconds: 1), (timer) async {
+    if (service is AndroidServiceInstance) {
+      if (await service.isForegroundService()) {
+        // Update notification content based on playback status
+        service.setForegroundNotificationInfo(
+          title: "HINGOLI FM",
+          content: isPlaying ? "Playing" : "Paused",
+          );
+      }
+    }
+    print("background service is running");
+    //perform some operation on background which is not noticeable to the used everytime
+    service.invoke('update');
+  });
 }
