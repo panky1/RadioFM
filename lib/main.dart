@@ -68,6 +68,8 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 }
 
 /// Android/iOS foreground service entry point
+
+/// Android/iOS foreground service entry point
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
   DartPluginRegistrant.ensureInitialized();
@@ -80,13 +82,13 @@ void onStart(ServiceInstance service) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
       service.setForegroundNotificationInfo( title: "HINGOLI FM",
-        content: isPlaying ? "Playing" : "Paused"
+          content: isPlaying ? "Playing" : "Paused"
       );
     });
     service.on('setAsBackground').listen((event) {
       service.setAsBackgroundService();
     });
-    // Listen for playback toggle events
+    /*// Listen for playback toggle events -working code with ui and foreground service state is synced
     service.on('togglePlayback').listen((event) {
       if (event?['state'] == 'Playing') {
         audioPlayer.play();
@@ -95,13 +97,13 @@ void onStart(ServiceInstance service) {
         audioPlayer.pause();
         isPlaying = false;
       }
-
       // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
         title: "HINGOLI FM",
         content: isPlaying ? "Playing" : "Paused",
       );
     });
+   */
 
   }
 
@@ -116,7 +118,7 @@ void onStart(ServiceInstance service) {
         service.setForegroundNotificationInfo(
           title: "HINGOLI FM",
           content: isPlaying ? "Playing" : "Paused",
-          );
+        );
       }
     }
     print("background service is running");
