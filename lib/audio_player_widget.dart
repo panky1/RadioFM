@@ -32,26 +32,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     }
   }
 
-  void _togglePlayback() {
-    setState(() {
-      if (_isPlaying) {
-        FlutterBackgroundService().invoke('togglePlayback');
-      }
-      _isPlaying = !_isPlaying;
-     /* if (_isPlaying) {
-        _audioPlayer.pause();
-        FlutterBackgroundService().invoke('setAsBackground');
-      } else {
-        _audioPlayer.play();
-        FlutterBackgroundService().invoke('setAsForeground');
-      }
-      _isPlaying = !_isPlaying;*/
-    });
-    // Update notification based on playback status
-    FlutterBackgroundService().invoke('update', {'status': _isPlaying ? 'Playing' : 'Paused'});
-
-  }
-
   @override
   void dispose() {
     _audioPlayer.dispose();
@@ -119,7 +99,21 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
               // Play/Pause Button
               FloatingActionButton(
-                onPressed: _togglePlayback,
+               // onPressed: _togglePlayback,
+                onPressed: (){
+                  setState(() {
+                    if (_isPlaying) {
+                      _audioPlayer.pause();
+                      FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
+                    } else {
+                      _audioPlayer.play();
+                      FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
+                      //FlutterBackgroundService().invoke('setAsForeground');
+
+                    }
+                    _isPlaying = !_isPlaying; // Toggle play state
+                  });
+                },
                 child: Icon(
                   _isPlaying ? Icons.pause_circle : Icons.play_circle,
                   size: 50,

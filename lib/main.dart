@@ -11,7 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Check and request required permissions
   await checkAndRequestPermissions();
-  await initializeService();
+ // await initializeService();
 
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -19,6 +19,7 @@ Future<void> main() async {
         AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
         //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
+  Future.delayed(const Duration(seconds: 2), initializeService);
 }
 
 /// Check and request necessary permissions
@@ -74,7 +75,7 @@ void onStart(ServiceInstance service) {
   bool isPlaying = false;
 
   // Initialize the audio player with a default URL
-  audioPlayer.setUrl('https://streams.ilovemusic.de/iloveradio6.mp3');
+  audioPlayer.setUrl('http://103.112.32.142:8000/stream');
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
@@ -85,26 +86,28 @@ void onStart(ServiceInstance service) {
     service.on('setAsBackground').listen((event) {
       service.setAsBackgroundService();
     });
-  }
-  // Handle play/pause commands
-  service.on('togglePlayback').listen((event){
-    if(isPlaying){
-      audioPlayer.pause();
-    }else{
-      audioPlayer.play();
-    }
-    isPlaying = !isPlaying;
-// Update notification content
-    if (service is AndroidServiceInstance){
+    // Listen for playback toggle events
+    service.on('togglePlayback').listen((event) {
+      if (event?['state'] == 'Playing') {
+        audioPlayer.play();
+        isPlaying = true;
+      } else if (event?['state'] == 'Paused') {
+        audioPlayer.pause();
+        isPlaying = false;
+      }
+
+      // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
         title: "HINGOLI FM",
         content: isPlaying ? "Playing" : "Paused",
       );
-    }
-  });
+    });
+
+  }
+
   service.on('stopService').listen((event) {
-    /*audioPlayer.stop();
-    service.stopSelf();*/
+    audioPlayer.stop();
+    service.stopSelf();
   });
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
