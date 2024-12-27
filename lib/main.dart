@@ -7,20 +7,17 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:radio1/audio_player_widget.dart';
 
-import 'logger/AppLogger.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Check and request required permissions
   await checkAndRequestPermissions();
- // await initializeService();
-  // Initialize logging in the main entry point
-  AppLogger().info("Application Started");
+  // await initializeService();
+
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home:
-        AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
-        //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
+    AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
+    //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
   Future.delayed(const Duration(seconds: 2), initializeService);
 }
@@ -99,14 +96,12 @@ void onStart(ServiceInstance service) {
 
     // Listen for playback toggle events
     service.on('togglePlayback').listen((event) {
-      AppLogger().debug("event togglePlayback: ${event.toString()}");
-      if (event?['state'] == 'Playing' && !isPlaying){
+      if (event?['state'] == 'Playing') {
         audioPlayer.play();
         isPlaying = true;
-      } else if (event?['state'] == 'Paused' && isPlaying)  {
+      } else if (event?['state'] == 'Paused') {
         audioPlayer.pause();
         isPlaying = false;
-        AppLogger().debug("event togglePlayback pause: ${event.toString()}");
       }
       // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
@@ -114,18 +109,13 @@ void onStart(ServiceInstance service) {
         content: isPlaying ? "Playing" : "Paused",
       );
     });
-//You will need to add an endpoint in the background service to handle the checkAudioState command, which will return the current playback state
-    service.on('checkAudioState').listen((event) {
-      AppLogger().debug("echeckAudioState: ${event.toString()}");
-      service.invoke('audioState', {'state': isPlaying ? 'Playing' : 'Paused'});
-    });
+
   }
 
   // Listen for stop service event
   service.on('stopService').listen((event) {
     audioPlayer.stop();
     service.stopSelf();
-    AppLogger().debug("Stop Service");
   });
 
   // Periodic timer to update the notification and perform background operations
@@ -141,7 +131,7 @@ void onStart(ServiceInstance service) {
     }
 
     // Ensure the audio stream is still set (in case the URL changes)
-   // audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+    //audioPlayer.setUrl('http://103.112.32.142:8000/stream');
     print("Background service is running");
 
     // Perform any other background tasks you need

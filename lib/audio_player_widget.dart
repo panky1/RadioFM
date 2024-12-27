@@ -1,11 +1,7 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
-
-import 'logger/AppLogger.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -20,66 +16,41 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 50; // Default volume
-  late final AppLogger logger;
-
 
   @override
   void initState() {
     super.initState();
-    // Initialize AppLogger instance
-    logger = AppLogger();
     WidgetsBinding.instance.addObserver(this); // Observe app lifecycle events
     _audioPlayer = AudioPlayer();
     _initAudioPlayer();
-    logger.debug("initState with audio player");
-   /* setState(() {
-      _isPlaying = true;
-    });*/
   }
+
+  Future<void> _initAudioPlayer() async {
+    try {
+      await _audioPlayer.setUrl(widget.url);
+      _audioPlayer.setVolume(_volume / 100);
+    } catch (e) {
+      print('Error initializing audio player: $e');
+    }
+  }
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    print('didChangeDependencies called: Dependencies have changed.');
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
+    super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    /* logger.debug("didChangeAppLifecycleState: $state");
-    print("didChangeAppLifecycleState: $state");*/
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       // Handle background state
       FlutterBackgroundService().invoke('setAsBackground');
     } else if (state == AppLifecycleState.resumed) {
       // Handle when the app comes back to foreground
       FlutterBackgroundService().invoke('setAsForeground');
-      // Sync UI state with background service
-      if(state == 'Playing'){
-        setState(() {
-          logger.debug("didChangeAppLifecycleState:SetState $_isPlaying");
-          print("didChangeAppLifecycleState SetState: $_isPlaying");
-          _isPlaying = true; // Ensure the UI reflects the correct state
-        });
-      }
-
     }
     super.didChangeAppLifecycleState(state);
   }
-
-  Future<void> _initAudioPlayer() async {
-    try {
-      // Do not reset the URL when the app resumes if it's already set in the background service.
-      if (!_isPlaying) {
-        await _audioPlayer.setUrl(widget.url);
-        _audioPlayer.setVolume(_volume / 100);
-      }
-    } catch (e) {
-      print('Error initializing audio player: $e');
-    }
-  }
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -146,16 +117,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                 FloatingActionButton(
                   onPressed: () {
                     setState(() {
-                      logger.debug("FloatingActionButton: setState: $_isPlaying");
-                      print("FloatingActionButton setState:  $_isPlaying");
                       if (_isPlaying) {
-                        logger.debug("FloatingActionButton: setState if pause: $_isPlaying");
-                        print("FloatingActionButton setState if pause:  $_isPlaying");
                         _audioPlayer.pause();
                         FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
                       } else {
-                        logger.debug("FloatingActionButton: setState else play: $_isPlaying");
-                        print("FloatingActionButton setState else play:  $_isPlaying");
                         _audioPlayer.play();
                         FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
                       }
@@ -175,34 +140,13 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
     );
   }
 
-  @override
-  void deactivate() {
-    logger.debug("deactivate");
-    print("deactivate");
-    super.deactivate();
-    print('deactivate called: Widget is being removed from the tree.');
-  }
-  @override
-  void dispose() {
-    logger.debug("dispose");
-    print("dispose");
-    WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
-    _audioPlayer.dispose(); // Ensure proper cleanup of the audio player
-    super.dispose();
-  }
-
   Future<bool> _onWillPop() async {
     if (_isPlaying) {
-      logger.debug("_onWillPop: $_isPlaying");
-      print("_onWillPop : $_isPlaying");
       // Ensure the audio continues playing in the background
       FlutterBackgroundService().invoke('setAsForeground');
       setState(() {
         _isPlaying = true; // Audio continues playing
-        logger.debug("_onWillPop setState: $_isPlaying");
-        print("_onWillPop setState: $_isPlaying");
-
-        });
+      });
     }
 
     // Transition to the background service
@@ -213,5 +157,29 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
     return false; // Prevents default back button behavior
   }
-}
 
+
+/*  Future<bool?> _showExitConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Do you want to stop playback and exit the app?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false), // Stay in the app
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+            //  _audioPlayer.stop(); // Stop audio playback on exit
+              FlutterBackgroundService().invoke('setAsBackground');
+              Navigator.of(context).pop(true); // Exit the app
+            },
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+  }*/
+}
