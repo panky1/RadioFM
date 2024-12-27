@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -11,7 +12,7 @@ class AudioPlayerWidget extends StatefulWidget {
   State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
 }
 
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindingObserver {
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 50; // Default volume
@@ -19,6 +20,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Observe app lifecycle events
     _audioPlayer = AudioPlayer();
     _initAudioPlayer();
   }
@@ -32,103 +34,266 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     }
   }
 
-  void _togglePlayback() {
-    setState(() {
-      if (_isPlaying) {
-        FlutterBackgroundService().invoke('togglePlayback');
-      }
-      _isPlaying = !_isPlaying;
-     /* if (_isPlaying) {
-        _audioPlayer.pause();
-        FlutterBackgroundService().invoke('setAsBackground');
-      } else {
-        _audioPlayer.play();
-        FlutterBackgroundService().invoke('setAsForeground');
-      }
-      _isPlaying = !_isPlaying;*/
-    });
-    // Update notification based on playback status
-    FlutterBackgroundService().invoke('update', {'status': _isPlaying ? 'Playing' : 'Paused'});
-
-  }
-
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // Handle background state
+      FlutterBackgroundService().invoke('setAsBackground');
+    } else if (state == AppLifecycleState.resumed) {
+      // Handle when the app comes back to foreground
+      FlutterBackgroundService().invoke('setAsForeground');
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.orange,
-      appBar: AppBar(
-        title: const Text("HINGOLI FM"),
-        backgroundColor: Colors.deepOrange,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
+    return WillPopScope(
+      onWillPop: _onWillPop, // Handle back button press
+      child: Scaffold(
+        backgroundColor: Colors.orange,
+        appBar: AppBar(
+          title: const Text("HINGOLI FM"),
+          backgroundColor: Colors.deepOrange,
+        ),
+        drawer: Drawer(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Display image
-              Container(
-                width: 250,
-                height: 250,
+              const DrawerHeader(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
+                  color: Colors.deepOrange,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage: AssetImage('assets/images/file.jpeg'),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      "HINGOLI FM",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Suno Dill Se...",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Image.asset(
-                    'assets/images/file.jpeg',
-                    fit: BoxFit.cover,
-                  ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: const [
+                    ListTile(
+                      leading: Icon(Icons.info),
+                      title: Text("About Us"),
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.mail),
+                      title: Text("Contact"),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Volume Slider
-              Slider(
-                value: _volume,
-                min: 0,
-                max: 100,
-                divisions: 100,
-                label: 'Volume ${_volume.round()}',
-                onChanged: (value) {
-                  setState(() {
-                    _volume = value;
-                    _audioPlayer.setVolume(_volume / 100);
-                  });
-                },
-              ),
-
-              Text(
-                _isPlaying ? 'Playing' : 'Paused',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              // Play/Pause Button
-              FloatingActionButton(
-                onPressed: _togglePlayback,
-                child: Icon(
-                  _isPlaying ? Icons.pause_circle : Icons.play_circle,
-                  size: 50,
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Address",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                        "HINGOLI FM 89.6 MHz (Suno dill se...)\nRamakrishna Nagar, Balsond, Dist.Hingoli- 431513, (Maharashtra)"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Broadcast Time",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("24H"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Band Quality",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Digital"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Language",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Hindi, Marathi & English"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Coverage Area",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Whole World"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Listeners",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Unlimited"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Mail ID",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("hingolifm.89.6mhz@gmail.com"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Facebook",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("HINGOLI FM"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Broadcasters",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                        "(1) Trishna Kapoor 9315826394, 8805392556\n(2) Vijay R Thakur 9422650659"),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Display image
+                Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.asset(
+                      'assets/images/file.jpeg',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Volume Slider
+                Slider(
+                  value: _volume,
+                  min: 0,
+                  max: 100,
+                  divisions: 100,
+                  label: 'Volume ${_volume.round()}',
+                  onChanged: (value) {
+                    setState(() {
+                      _volume = value;
+                      _audioPlayer.setVolume(_volume / 100);
+                    });
+                  },
+                ),
+
+                Text(
+                  _isPlaying ? 'Playing' : 'Paused',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+
+                // Play/Pause Button
+                FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      if (_isPlaying) {
+                        _audioPlayer.pause();
+                        FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
+                      } else {
+                        _audioPlayer.play();
+                        FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
+                      }
+                      _isPlaying = !_isPlaying; // Toggle play state
+                    });
+                  },
+                  child: Icon(
+                    _isPlaying ? Icons.pause_circle : Icons.play_circle,
+                    size: 50,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
+
+  Future<bool> _onWillPop() async {
+    if (_isPlaying) {
+      // Ensure the audio continues playing in the background
+      FlutterBackgroundService().invoke('setAsForeground');
+      setState(() {
+        _isPlaying = true; // Audio continues playing
+      });
+    }
+
+    // Transition to the background service
+    FlutterBackgroundService().invoke('setAsBackground');
+
+    // Exit the app gracefully
+    SystemNavigator.pop(); // Exits the app
+
+    return false; // Prevents default back button behavior
+  }
+
+
+/*  Future<bool?> _showExitConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Do you want to stop playback and exit the app?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false), // Stay in the app
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+            //  _audioPlayer.stop(); // Stop audio playback on exit
+              FlutterBackgroundService().invoke('setAsBackground');
+              Navigator.of(context).pop(true); // Exit the app
+            },
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+  }*/
 }
