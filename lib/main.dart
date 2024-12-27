@@ -7,12 +7,15 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:radio1/audio_player_widget.dart';
 
+import 'logger/AppLogger.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Check and request required permissions
   await checkAndRequestPermissions();
  // await initializeService();
-
+  // Initialize logging in the main entry point
+  AppLogger().info("Application Started");
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home:
@@ -96,12 +99,14 @@ void onStart(ServiceInstance service) {
 
     // Listen for playback toggle events
     service.on('togglePlayback').listen((event) {
-      if (event?['state'] == 'Playing') {
+      AppLogger().debug("event togglePlayback: ${event.toString()}");
+      if (event?['state'] == 'Playing' && !isPlaying){
         audioPlayer.play();
         isPlaying = true;
-      } else if (event?['state'] == 'Paused') {
+      } else if (event?['state'] == 'Paused' && isPlaying)  {
         audioPlayer.pause();
         isPlaying = false;
+        AppLogger().debug("event togglePlayback pause: ${event.toString()}");
       }
       // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
@@ -109,13 +114,18 @@ void onStart(ServiceInstance service) {
         content: isPlaying ? "Playing" : "Paused",
       );
     });
-
+//You will need to add an endpoint in the background service to handle the checkAudioState command, which will return the current playback state
+    service.on('checkAudioState').listen((event) {
+      AppLogger().debug("echeckAudioState: ${event.toString()}");
+      service.invoke('audioState', {'state': isPlaying ? 'Playing' : 'Paused'});
+    });
   }
 
   // Listen for stop service event
   service.on('stopService').listen((event) {
     audioPlayer.stop();
     service.stopSelf();
+    AppLogger().debug("Stop Service");
   });
 
   // Periodic timer to update the notification and perform background operations
