@@ -78,17 +78,23 @@ void onStart(ServiceInstance service) {
 
   // Initialize the audio player with a default URL
   audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+
   if (service is AndroidServiceInstance) {
+    // Handle foreground service behavior
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
-      service.setForegroundNotificationInfo( title: "HINGOLI FM",
+      service.setForegroundNotificationInfo(
+          title: "HINGOLI FM",
           content: isPlaying ? "Playing" : "Paused"
       );
     });
+
+    // Handle background service behavior
     service.on('setAsBackground').listen((event) {
       service.setAsBackgroundService();
     });
-    /*// Listen for playback toggle events -working code with ui and foreground service state is synced
+
+    // Listen for playback toggle events
     service.on('togglePlayback').listen((event) {
       if (event?['state'] == 'Playing') {
         audioPlayer.play();
@@ -103,26 +109,33 @@ void onStart(ServiceInstance service) {
         content: isPlaying ? "Playing" : "Paused",
       );
     });
-   */
 
   }
 
+  // Listen for stop service event
   service.on('stopService').listen((event) {
     audioPlayer.stop();
     service.stopSelf();
   });
-  Timer.periodic(const Duration(seconds: 1), (timer) async {
+
+  // Periodic timer to update the notification and perform background operations
+  Timer.periodic(const Duration(seconds: 5), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
-        // Update notification content based on playback status
+        // Update the notification content based on playback status
         service.setForegroundNotificationInfo(
           title: "HINGOLI FM",
           content: isPlaying ? "Playing" : "Paused",
         );
       }
     }
-    print("background service is running");
-    //perform some operation on background which is not noticeable to the used everytime
+
+    // Ensure the audio stream is still set (in case the URL changes)
+    audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+    print("Background service is running");
+
+    // Perform any other background tasks you need
     service.invoke('update');
   });
 }
+
