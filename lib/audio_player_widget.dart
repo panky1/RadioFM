@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:music_visualizer/music_visualizer.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -16,6 +17,14 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 50; // Default volume
+  final List<Color> colors = [
+    Colors.red[900]!,
+    Colors.green[900]!,
+    Colors.blue[900]!,
+    Colors.brown[900]!
+  ];
+
+  final List<int> duration = [900, 700, 600, 800, 500];
 
   @override
   void initState() {
@@ -206,6 +215,20 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                 ),
                 const SizedBox(height: 20),
 
+                // Show MusicVisualizer only when audio is playing
+                if (_isPlaying)
+                  SizedBox(
+                    height: 80,
+                    child: MusicVisualizer(colors: colors, duration: duration, barCount: 30),
+                  )
+                else
+                  const Icon(
+                    Icons.music_off,
+                    size: 50,
+                    color: Colors.white,),
+
+                const SizedBox(height: 10),
+
                 // Volume Slider
                 Slider(
                   value: _volume,
@@ -220,6 +243,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                     });
                   },
                 ),
+
 
                 Text(
                   _isPlaying ? 'Playing' : 'Paused',
