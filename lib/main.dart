@@ -131,7 +131,7 @@ void onStart(ServiceInstance service) {
     }
 
     // Ensure the audio stream is still set (in case the URL changes)
-    audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+   // audioPlayer.setUrl('http://103.112.32.142:8000/stream');
     print("Background service is running");
 
     // Perform any other background tasks you need

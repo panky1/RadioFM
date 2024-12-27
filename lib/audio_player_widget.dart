@@ -27,8 +27,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
   Future<void> _initAudioPlayer() async {
     try {
-      await _audioPlayer.setUrl(widget.url);
-      _audioPlayer.setVolume(_volume / 100);
+      // Do not reset the URL when the app resumes if it's already set in the background service.
+      if (!_isPlaying) {
+        await _audioPlayer.setUrl(widget.url);
+        _audioPlayer.setVolume(_volume / 100);
+      }
     } catch (e) {
       print('Error initializing audio player: $e');
     }
@@ -37,6 +40,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
+    _audioPlayer.dispose(); // Ensure proper cleanup of the audio player
     super.dispose();
   }
 
@@ -48,6 +52,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
     } else if (state == AppLifecycleState.resumed) {
       // Handle when the app comes back to foreground
       FlutterBackgroundService().invoke('setAsForeground');
+      // Sync UI state with background service
+      setState(() {
+        _isPlaying = true; // Ensure the UI reflects the correct state
+      });
     }
     super.didChangeAppLifecycleState(state);
   }
@@ -146,6 +154,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
       FlutterBackgroundService().invoke('setAsForeground');
       setState(() {
         _isPlaying = true; // Audio continues playing
+
       });
     }
 
@@ -157,29 +166,5 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
     return false; // Prevents default back button behavior
   }
-
-
-/*  Future<bool?> _showExitConfirmationDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit App'),
-        content: const Text('Do you want to stop playback and exit the app?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false), // Stay in the app
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-            //  _audioPlayer.stop(); // Stop audio playback on exit
-              FlutterBackgroundService().invoke('setAsBackground');
-              Navigator.of(context).pop(true); // Exit the app
-            },
-            child: const Text('Exit'),
-          ),
-        ],
-      ),
-    );
-  }*/
 }
+
