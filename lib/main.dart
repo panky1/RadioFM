@@ -3,8 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:radio1/AudioPlayerManager.dart';
 import 'package:radio1/audio_player_widget.dart';
 
 Future<void> main() async {
@@ -12,14 +12,13 @@ Future<void> main() async {
   // Check and request required permissions
   await checkAndRequestPermissions();
   // await initializeService();
-
+  Future.delayed(const Duration(seconds: 2), initializeService);
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home:
     AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
     //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
-  Future.delayed(const Duration(seconds: 2), initializeService);
 }
 
 /// Check and request necessary permissions
@@ -69,15 +68,14 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 /// Android/iOS foreground service entry point
 
-/// Android/iOS foreground service entry point
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
   DartPluginRegistrant.ensureInitialized();
-  final audioPlayer = AudioPlayer();
+ // final audioPlayer =  AudioPlayerManager.getAudioPlayerInstance();
   bool isPlaying = false;
 
   // Initialize the audio player with a default URL
-  audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+ // audioPlayer.setUrl('http://103.112.32.142:8000/stream');
 
   if (service is AndroidServiceInstance) {
     // Handle foreground service behavior
@@ -97,12 +95,14 @@ void onStart(ServiceInstance service) {
     // Listen for playback toggle events
     service.on('togglePlayback').listen((event) {
       if (event?['state'] == 'Playing') {
-        audioPlayer.play();
+        AudioPlayerManager.getAudioPlayerInstance().play();
         isPlaying = true;
       } else if (event?['state'] == 'Paused') {
-        audioPlayer.pause();
+        AudioPlayerManager.getAudioPlayerInstance().pause();
         isPlaying = false;
       }
+      isPlaying = !isPlaying;
+
       // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
         title: "HINGOLI FM",
@@ -114,7 +114,7 @@ void onStart(ServiceInstance service) {
 
   // Listen for stop service event
   service.on('stopService').listen((event) {
-    audioPlayer.stop();
+    AudioPlayerManager.getAudioPlayerInstance().stop();
     service.stopSelf();
   });
 
@@ -129,9 +129,7 @@ void onStart(ServiceInstance service) {
         );
       }
     }
-
     // Ensure the audio stream is still set (in case the URL changes)
-   /* audioPlayer.setUrl('http://103.112.32.142:8000/stream');*/
     print("Background service is running");
 
     // Perform any other background tasks you need

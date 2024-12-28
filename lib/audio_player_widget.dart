@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_visualizer/music_visualizer.dart';
+import 'package:radio1/AudioPlayerManager.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -30,9 +31,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // Observe app lifecycle events
-    _audioPlayer = AudioPlayer();
+    _audioPlayer = AudioPlayerManager.getAudioPlayerInstance(); // Use singleton
     _initAudioPlayer();
   }
+
+
 
   Future<void> _initAudioPlayer() async {
     try {
@@ -43,8 +46,22 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
     }
   }
 
+  void _togglePlayback() {
+    setState(() {
+      if (_isPlaying) {
+        _audioPlayer.pause();
+        FlutterBackgroundService().invoke('setAsBackground');
+      } else {
+        _audioPlayer.play();
+        FlutterBackgroundService().invoke('setAsForeground');
+      }
+      _isPlaying = !_isPlaying;
+    });
+  }
+
   @override
   void dispose() {
+    _audioPlayer.dispose(); // Dispose audio player to release resources
     WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
     super.dispose();
   }
@@ -52,19 +69,23 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      // Handle background state
       FlutterBackgroundService().invoke('setAsBackground');
     } else if (state == AppLifecycleState.resumed) {
-      // Handle when the app comes back to foreground
       FlutterBackgroundService().invoke('setAsForeground');
     }
     super.didChangeAppLifecycleState(state);
   }
 
+  Future<bool> _onWillPop() async {
+    // Send the app to the background while keeping the audio and service active
+    FlutterBackgroundService().invoke('setAsBackground'); // Notify the service
+    return false; // Prevent default back button behavior
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onWillPop, // Handle back button press
+      onWillPop: _onWillPop, // Intercept back button press
       child: Scaffold(
         backgroundColor: Colors.orange,
         appBar: AppBar(
@@ -216,18 +237,12 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                 const SizedBox(height: 20),
 
                 // Show MusicVisualizer only when audio is playing
-                if (_isPlaying)
-                  SizedBox(
-                    height: 80,
-                    child: MusicVisualizer(colors: colors, duration: duration, barCount: 30),
-                  )
-                else
-                  const Icon(
-                    Icons.music_off,
-                    size: 50,
-                    color: Colors.white,),
+                SizedBox(
+                  height: 80,
+                  child: MusicVisualizer(colors: colors, duration: duration, barCount: 30),
+                ),
 
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 // Volume Slider
                 Slider(
@@ -244,7 +259,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                   },
                 ),
 
-
                 Text(
                   _isPlaying ? 'Playing' : 'Paused',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -253,18 +267,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
                 // Play/Pause Button
                 FloatingActionButton(
-                  onPressed: () {
-                    setState(() {
-                      if (_isPlaying) {
-                        _audioPlayer.pause();
-                        FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
-                      } else {
-                        _audioPlayer.play();
-                        FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
-                      }
-                      _isPlaying = !_isPlaying; // Toggle play state
-                    });
-                  },
+                  onPressed: _togglePlayback,
                   child: Icon(
                     _isPlaying ? Icons.pause_circle : Icons.play_circle,
                     size: 50,
@@ -277,47 +280,4 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
       ),
     );
   }
-
-  Future<bool> _onWillPop() async {
-    if (_isPlaying) {
-      // Ensure the audio continues playing in the background
-      FlutterBackgroundService().invoke('setAsForeground');
-      setState(() {
-        _isPlaying = true; // Audio continues playing
-      });
-    }
-
-    // Transition to the background service
-    FlutterBackgroundService().invoke('setAsBackground');
-
-    // Exit the app gracefully
-    SystemNavigator.pop(); // Exits the app
-
-    return false; // Prevents default back button behavior
-  }
-
-
-/*  Future<bool?> _showExitConfirmationDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Exit App'),
-        content: const Text('Do you want to stop playback and exit the app?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false), // Stay in the app
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-            //  _audioPlayer.stop(); // Stop audio playback on exit
-              FlutterBackgroundService().invoke('setAsBackground');
-              Navigator.of(context).pop(true); // Exit the app
-            },
-            child: const Text('Exit'),
-          ),
-        ],
-      ),
-    );
-  }*/
 }
