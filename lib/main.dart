@@ -12,13 +12,14 @@ Future<void> main() async {
   // Check and request required permissions
   await checkAndRequestPermissions();
   // await initializeService();
-  Future.delayed(const Duration(seconds: 2), initializeService);
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
     home:
     AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),
     //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
+  Future.delayed(const Duration(seconds: 2), initializeService);
+
 }
 
 /// Check and request necessary permissions

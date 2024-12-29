@@ -79,6 +79,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   Future<bool> _onWillPop() async {
     // Send the app to the background while keeping the audio and service active
     FlutterBackgroundService().invoke('setAsBackground'); // Notify the service
+    SystemNavigator.setFrameworkHandlesBack(true); // Minimize the app
     return false; // Prevent default back button behavior
   }
 
