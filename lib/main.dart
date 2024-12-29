@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:radio1/applogger.dart';
 import 'package:radio1/audio_player_widget.dart';
+import 'package:radio1/audioplayermanager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,24 +71,32 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 /// Android/iOS foreground service entry point
 @pragma('vm:entry-point')
+@pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
   DartPluginRegistrant.ensureInitialized();
-  final audioPlayer = AudioPlayer();
+  final audioPlayer = AudioPlayerManager.getAudioPlayerInstance();
   bool isPlaying = false;
 
-  // Initialize the audio player with a default URL
-  audioPlayer.setUrl('http://103.112.32.142:8000/stream');
+  if (!isPlaying && audioPlayer.sequenceState == null) {
+    audioPlayer.setUrl('http://103.112.32.142:8000/stream').then((_) {
+      AppLogger().debug("Stream URL set successfully in onStart.");
+      audioPlayer.stop(); // Ensure it is paused initially
+    }).catchError((error) {
+      AppLogger().error("Error setting stream URL in onStart: $error");
+    });
+  }
+  AppLogger().debug("isplaying state $isPlaying");
+
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
-      service.setForegroundNotificationInfo( title: "HINGOLI FM",
-          content: isPlaying ? "Playing" : "Paused"
+      service.setForegroundNotificationInfo(
+        title: "HINGOLI FM",
+        content: isPlaying ? "Playing" : "Paused",
       );
     });
-    service.on('setAsBackground').listen((event) {
-      service.setAsBackgroundService();
-    });
-    // Listen for playback toggle events
+
+
     service.on('togglePlayback').listen((event) {
       if (event?['state'] == 'Playing') {
         audioPlayer.play();
@@ -96,31 +106,30 @@ void onStart(ServiceInstance service) {
         isPlaying = false;
       }
 
-      // Update the foreground notification based on playback state
       service.setForegroundNotificationInfo(
         title: "HINGOLI FM",
         content: isPlaying ? "Playing" : "Paused",
       );
     });
-
   }
 
   service.on('stopService').listen((event) {
-   // audioPlayer.stop();
-   // service.stopSelf();
+    audioPlayer.stop();
+    service.stopSelf();
   });
+
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
-        // Update notification content based on playback status
         service.setForegroundNotificationInfo(
           title: "HINGOLI FM",
           content: isPlaying ? "Playing" : "Paused",
         );
       }
     }
-    print("background service is running");
-    //perform some operation on background which is not noticeable to the used everytime
+    AppLogger().debug("Background service is running.");
     service.invoke('update');
   });
 }
+
+

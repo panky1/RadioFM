@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_visualizer/music_visualizer.dart';
+import 'package:radio1/applogger.dart';
+import 'package:radio1/audioplayermanager.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -28,22 +30,42 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AudioPlayer();
+    _audioPlayer = AudioPlayerManager.getAudioPlayerInstance();
     _initAudioPlayer();
   }
 
+
   Future<void> _initAudioPlayer() async {
     try {
-      await _audioPlayer.setUrl(widget.url);
+      // Guard against re-initialization
+      if (_audioPlayer.sequenceState == null) {
+        await _audioPlayer.setUrl(widget.url);
+        await _audioPlayer.stop(); // Ensure it's paused on initialization
+        print('Stream URL set successfully.');
+      } else {
+        print('Audio player already initialized.');
+      }
+
       _audioPlayer.setVolume(_volume / 100);
+
+      // Listen to player state changes
+      _audioPlayer.playerStateStream.listen((state) {
+        setState(() {
+          _isPlaying = state.playing;
+        });
+      });
     } catch (e) {
       print('Error initializing audio player: $e');
     }
+
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
+    // Only dispose if needed, as the singleton manages the player lifecycle
+    if (!_audioPlayer.playing) {
+      _audioPlayer.dispose();
+    }
     super.dispose();
   }
 
@@ -238,28 +260,25 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 const SizedBox(height: 20),
 
                 // Play/Pause Button
-                FloatingActionButton(
-                  // onPressed: _togglePlayback,
-                  onPressed: () {
-                    setState(() {
-                      if (_isPlaying) {
-                        _audioPlayer.pause();
-                        FlutterBackgroundService()
-                            .invoke('togglePlayback', {'state': 'Paused'});
-                      } else {
-                        _audioPlayer.play();
-                        FlutterBackgroundService()
-                            .invoke('togglePlayback', {'state': 'Playing'});
-                        //FlutterBackgroundService().invoke('setAsForeground');
-                      }
-                      _isPlaying = !_isPlaying; // Toggle play state
-                    });
-                  },
-                  child: Icon(
-                    _isPlaying ? Icons.pause_circle : Icons.play_circle,
-                    size: 50,
-                  ),
-                ),
+            FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  if (_isPlaying) {
+                    _audioPlayer.pause();
+                    FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
+                  } else {
+                    _audioPlayer.play();
+                    FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
+                  }
+                  // UI reflects the actual playback state
+                  _isPlaying = !_isPlaying;
+                });
+              },
+              child: Icon(
+                _isPlaying ? Icons.pause_circle : Icons.play_circle,
+                size: 50,
+              ),
+            ),
               ],
             ),
           ),
