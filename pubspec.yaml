@@ -37,6 +37,8 @@ dependencies:
   flutter_background_service_ios: ^5.0.3
   permission_handler: ^11.3.1
   flutter_local_notifications: ^18.0.1
+  music_visualizer: ^1.0.4
+  logger: ^2.5.0
 
 
 
