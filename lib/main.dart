@@ -3,13 +3,15 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:radio1/applogger.dart';
 import 'package:radio1/audio_player_widget.dart';
 import 'package:radio1/audioplayermanager.dart';
+import 'package:radio1/bloc/AudioPlayerBloc.dart';
 
-Future<void> main() async {
+/*Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Check and request required permissions
   await checkAndRequestPermissions();
@@ -22,6 +24,18 @@ Future<void> main() async {
     //AudioPlayerWidget(url: 'https://streams.ilovemusic.de/iloveradio6.mp3'),
   ));
   Future.delayed(const Duration(seconds: 2), initializeService);
+}*/
+void main() {
+  final audioPlayer = AudioPlayer();
+  runApp(
+    BlocProvider<AudioPlayerBloc>(
+      create: (context) => AudioPlayerBloc(audioPlayer),  // Providing AudioPlayerBloc to the widget tree
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: AudioPlayerWidget(url: 'http://103.112.32.142:8000/stream'),  // AudioPlayerWidget initialized with stream URL
+      ),
+    ),
+  );
 }
 
 /// Check and request necessary permissions
