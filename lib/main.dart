@@ -71,7 +71,6 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 /// Android/iOS foreground service entry point
 @pragma('vm:entry-point')
-@pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
   DartPluginRegistrant.ensureInitialized();
   final audioPlayer = AudioPlayerManager.getAudioPlayerInstance();
@@ -105,18 +104,19 @@ void onStart(ServiceInstance service) {
         audioPlayer.pause();
         isPlaying = false;
       }
-
       service.setForegroundNotificationInfo(
         title: "HINGOLI FM",
         content: isPlaying ? "Playing" : "Paused",
       );
     });
+    // Notify the app about the current state
   }
 
   service.on('stopService').listen((event) {
     audioPlayer.stop();
     service.stopSelf();
   });
+  // Stop service when app is removed from recent apps
 
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
@@ -131,5 +131,6 @@ void onStart(ServiceInstance service) {
     service.invoke('update');
   });
 }
+
 
 
