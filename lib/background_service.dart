@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 
+/*
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
   await service.configure(
@@ -48,3 +49,4 @@ void onStart(ServiceInstance service) {
      service.invoke('update');
   });
   }
+*/

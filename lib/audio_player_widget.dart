@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_visualizer/music_visualizer.dart';
-import 'package:radio1/AudioPlayerManager.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -14,7 +12,7 @@ class AudioPlayerWidget extends StatefulWidget {
   State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
 }
 
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindingObserver {
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 50; // Default volume
@@ -30,12 +28,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Observe app lifecycle events
-    _audioPlayer = AudioPlayerManager.getAudioPlayerInstance(); // Use singleton
+    _audioPlayer = AudioPlayer();
     _initAudioPlayer();
   }
-
-
 
   Future<void> _initAudioPlayer() async {
     try {
@@ -46,41 +41,17 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
     }
   }
 
-  void _togglePlayback() {
-    setState(() {
-      if (_isPlaying) {
-        _audioPlayer.pause();
-        FlutterBackgroundService().invoke('setAsBackground');
-      } else {
-        _audioPlayer.play();
-        FlutterBackgroundService().invoke('setAsForeground');
-      }
-      _isPlaying = !_isPlaying;
-    });
-  }
-
   @override
   void dispose() {
-    _audioPlayer.dispose(); // Dispose audio player to release resources
-    WidgetsBinding.instance.removeObserver(this); // Stop observing lifecycle events
+    _audioPlayer.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      FlutterBackgroundService().invoke('setAsBackground');
-    } else if (state == AppLifecycleState.resumed) {
-      FlutterBackgroundService().invoke('setAsForeground');
-    }
-    super.didChangeAppLifecycleState(state);
   }
 
   Future<bool> _onWillPop() async {
     // Send the app to the background while keeping the audio and service active
     FlutterBackgroundService().invoke('setAsBackground'); // Notify the service
-    SystemNavigator.setFrameworkHandlesBack(true); // Minimize the app
-    return false; // Prevent default back button behavior
+    // Minimize the app
+    return true; // Prevent default back button behavior
   }
 
   @override
@@ -240,11 +211,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                 // Show MusicVisualizer only when audio is playing
                 SizedBox(
                   height: 80,
-                  child: MusicVisualizer(colors: colors, duration: duration, barCount: 30),
+                  child: MusicVisualizer(
+                      colors: colors, duration: duration, barCount: 30),
                 ),
-
                 SizedBox(height: 10),
-
                 // Volume Slider
                 Slider(
                   value: _volume,
@@ -262,13 +232,29 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
                 Text(
                   _isPlaying ? 'Playing' : 'Paused',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
 
                 // Play/Pause Button
                 FloatingActionButton(
-                  onPressed: _togglePlayback,
+                  // onPressed: _togglePlayback,
+                  onPressed: () {
+                    setState(() {
+                      if (_isPlaying) {
+                        _audioPlayer.pause();
+                        FlutterBackgroundService()
+                            .invoke('togglePlayback', {'state': 'Paused'});
+                      } else {
+                        _audioPlayer.play();
+                        FlutterBackgroundService()
+                            .invoke('togglePlayback', {'state': 'Playing'});
+                        //FlutterBackgroundService().invoke('setAsForeground');
+                      }
+                      _isPlaying = !_isPlaying; // Toggle play state
+                    });
+                  },
                   child: Icon(
                     _isPlaying ? Icons.pause_circle : Icons.play_circle,
                     size: 50,
