@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_visualizer/music_visualizer.dart';
-import 'package:radio1/applogger.dart';
-import 'package:radio1/audioplayermanager.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String url;
@@ -14,11 +12,10 @@ class AudioPlayerWidget extends StatefulWidget {
   State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
 }
 
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindingObserver {
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   double _volume = 50; // Default volume
-  bool _isInitialized = false;
   final List<Color> colors = [
     Colors.red[900]!,
     Colors.green[900]!,
@@ -31,33 +28,14 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _audioPlayer = AudioPlayerManager.getAudioPlayerInstance();
+    _audioPlayer = AudioPlayer();
     _initAudioPlayer();
   }
 
-
   Future<void> _initAudioPlayer() async {
     try {
-      // Guard against re-initialization
-      if (_audioPlayer.sequenceState == null) {
-        await _audioPlayer.setUrl(widget.url);
-        await _audioPlayer.stop(); // Ensure it's paused on initialization
-        print('Stream URL set successfully.');
-      } else {
-        print('Audio player already initialized.');
-      }
-
+      await _audioPlayer.setUrl(widget.url);
       _audioPlayer.setVolume(_volume / 100);
-
-      // Listen to player state changes
-      _audioPlayer.playerStateStream.listen((state) {
-        AppLogger().debug("playerStateStream ");
-        setState(() {
-          _isPlaying = state.playing;
-        });
-      });
-
     } catch (e) {
       print('Error initializing audio player: $e');
     }
@@ -65,20 +43,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    // Only dispose if needed, as the singleton manages the player lifecycle
-    if (!_audioPlayer.playing) {
-      _audioPlayer.dispose();
-    }
+    _audioPlayer.dispose();
     super.dispose();
-  }
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("AppLifecycleState: $state");
-    if (state == AppLifecycleState.detached) {
-      // App is being terminated
-      print("App is being terminated");
-    }
   }
 
   Future<bool> _onWillPop() async {
@@ -98,138 +64,135 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
           title: const Text("HINGOLI FM"),
           backgroundColor: Colors.deepOrange,
         ),
-          drawer: Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                UserAccountsDrawerHeader(
-                  accountEmail: const Text("Sune Dil Se"),
-                  accountName: const Text("HINGOLI FM"),
-                  currentAccountPicture: const CircleAvatar(
-                    foregroundImage: AssetImage('assets/images/file.jpeg'),
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.deepOrange,
-                  ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              UserAccountsDrawerHeader(
+                accountEmail: const Text("Sune Dil Se"),
+                accountName: const Text("HINGOLI FM"),
+                currentAccountPicture: const CircleAvatar(
+                  foregroundImage: AssetImage('assets/images/file.jpeg'),
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.deepOrange,
+                ),
+                      ),
+
+              // Section: Features
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Features",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                ),
+                    ListTile(
+                leading: const Icon(Icons.info, color: Colors.deepOrange),
+                title: const Text("About Us"),
+                onTap: () {},
+                    ),
+                    ListTile(
+                leading: const Icon(Icons.mail, color: Colors.deepOrange),
+                title: const Text("Contact"),
+                onTap: () {},
                 ),
 
-                // Section: Features
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    "Features",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+              // Section: Info
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Information",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.info, color: Colors.deepOrange),
-                  title: const Text("About Us"),
-                  onTap: () {},
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Address",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "HINGOLI FM 89.6 MHz (Suno dill se...)\nRamakrishna Nagar, Balsond, Dist.Hingoli- 431513, (Maharashtra)",
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Broadcast Time",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("24H"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Band Quality",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Digital"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Language",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Hindi, Marathi & English"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Coverage Area",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Whole World"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Listeners",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("Unlimited"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Mail ID",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("hingolifm.89.6mhz@gmail.com"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Facebook",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text("HINGOLI FM"),
+                    SizedBox(height: 10),
+                    Text(
+                      "Broadcasters",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "(1) Trishna Kapoor 9315826394, 8805392556\n(2) Vijay R Thakur 9422650659",
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.mail, color: Colors.deepOrange),
-                  title: const Text("Contact"),
-                  onTap: () {},
-                ),
+              ),
 
-                // Section: Info
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    "Information",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+              // Section: Settings
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Settings",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Address",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "HINGOLI FM 89.6 MHz (Suno dill se...)\nRamakrishna Nagar, Balsond, Dist.Hingoli- 431513, (Maharashtra)",
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        "Broadcast Time",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("24H"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Band Quality",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Digital"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Language",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Hindi, Marathi & English"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Coverage Area",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Whole World"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Listeners",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("Unlimited"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Mail ID",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("hingolifm.89.6mhz@gmail.com"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Facebook",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text("HINGOLI FM"),
-                      SizedBox(height: 10),
-                      Text(
-                        "Broadcasters",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "(1) Trishna Kapoor 9315826394, 8805392556\n(2) Vijay R Thakur 9422650659",
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Section: Settings
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    "Settings",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings, color: Colors.deepOrange),
-                  title: const Text("Settings"),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading: const Icon(Icons.help, color: Colors.deepOrange),
-                  title: const Text("Help"),
-                  onTap: () {},
-                ),
-              ],
-            ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings, color: Colors.deepOrange),
+                title: const Text("Settings"),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.help, color: Colors.deepOrange),
+                title: const Text("Help"),
+                onTap: () {},
+              ),
+            ],
           ),
-
-
-
+        ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Center(
@@ -290,26 +253,28 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
                 const SizedBox(height: 20),
 
                 // Play/Pause Button
-            FloatingActionButton(
-              onPressed: ()  {
-                setState(() {
-                  if (_isPlaying ) {
-                    _audioPlayer.pause();
-                    FlutterBackgroundService().invoke('togglePlayback', {'state': 'Paused'});
-                  } else {
-                    _audioPlayer.play();
-                    FlutterBackgroundService().invoke('togglePlayback', {'state': 'Playing'});
-                  }
-                  // UI reflects the actual playback state
-                  _isPlaying = !_isPlaying;
-
-                });
-              },
-              child: Icon(
-                _isPlaying ? Icons.pause_circle : Icons.play_circle,
-                size: 50,
-              ),
-            ),
+                FloatingActionButton(
+                  // onPressed: _togglePlayback,
+                  onPressed: () {
+                    setState(() {
+                      if (_isPlaying) {
+                        _audioPlayer.pause();
+                        FlutterBackgroundService()
+                            .invoke('togglePlayback', {'state': 'Paused'});
+                      } else {
+                        _audioPlayer.play();
+                        FlutterBackgroundService()
+                            .invoke('togglePlayback', {'state': 'Playing'});
+                        //FlutterBackgroundService().invoke('setAsForeground');
+                      }
+                      _isPlaying = !_isPlaying; // Toggle play state
+                    });
+                  },
+                  child: Icon(
+                    _isPlaying ? Icons.pause_circle : Icons.play_circle,
+                    size: 50,
+                  ),
+                ),
               ],
             ),
           ),
@@ -318,7 +283,3 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with WidgetsBindi
     );
   }
 }
-
-
-
-
